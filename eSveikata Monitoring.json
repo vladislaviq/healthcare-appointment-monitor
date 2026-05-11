@@ -1,0 +1,410 @@
+{
+  "name": "eSveikata Monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "bc5c5460-1598-498b-996e-76472c49e055",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://ipr.esveikata.lt/api/searches/appointments/times",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "municipalityId",
+              "value": "66"
+            },
+            {
+              "name": "healthcareServiceId",
+              "value": "={{ $json['Service ID'] }}"
+            },
+            {
+              "name": "page",
+              "value": "0"
+            },
+            {
+              "name": "size",
+              "value": "50"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,ru;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Referer",
+              "value": "https://ipr.esveikata.lt/"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-origin"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Windows\""
+            },
+            {
+              "name": "Cookie",
+              "value": "YOUR_ESVEIKATA_COOKIES_HERE"
+            },
+            {
+              "name": "cookie",
+              "value": "YOUR_ESVEIKATA_COOKIES_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        368,
+        0
+      ],
+      "id": "2c70881b-35fb-468a-ba02-2a615c2068c3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c743a539-4e62-46ee-806d-72ef65aef196",
+              "leftValue": "={{ $json.hasNewSlots }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        0
+      ],
+      "id": "a31d8a07-ff6e-472a-ae9a-e3b6a82362af",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Google Sheets').item.json['Chat ID'] }}",
+        "text": "=❗️ Появились места к реабилитологу!  🏥 Больница: {{ $('Code in JavaScript').item.json.foundClinicNames }} 🔢 Количество новых слотов: {{ $('Code in JavaScript').item.json.newSlotsCount }}  👉 [Записаться на Esveikata](https://ipr.esveikata.lt/)",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        -16
+      ],
+      "id": "ffa24a08-1dc4-4f5c-8b95-d0f177633991",
+      "name": "Send a text message",
+      "webhookId": "2456ad95-14b7-4644-9297-c636675a54c9",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. ВОССТАНАВЛИВАЕМ ПАМЯТЬ\nconst sheetNode = $('Google Sheets').first();\nconst sheetData = sheetNode ? sheetNode.json : {};\n\n// Достаем старые ID\nconst oldIdsString = sheetData[\"Last IDs\"] ? sheetData[\"Last IDs\"].toString() : \"\";\nconst oldIds = oldIdsString.split(\",\").map(s => s.trim()).filter(id => id);\nconst rowNumber = sheetData.row_number;\n\n// 2. СОБИРАЕМ ДАННЫЕ\nconst items = $input.all();\nlet currentIds = [];\nlet idToNameMap = {}; // Словарь: \"ID_слота\" -> \"Название клиники\"\n\n// Список нужных больниц (ID)\nconst targetHospitals = [1000097024, 1000097015];\n\nitems.forEach(item => {\n    const responseData = item.json;\n    \n    if (responseData.data && Array.isArray(responseData.data)) {\n        responseData.data.forEach(slot => {\n            \n            // --- ФИЛЬТР ---\n            const isFunded = slot.fundType?.name === \"Ligonių kasos\";\n            const needsReferral = slot.referralNeed?.name === \"Su siuntimu\";\n            const isTargetHospital = targetHospitals.includes(Number(slot.organizationId));\n            \n            if (isFunded && needsReferral && isTargetHospital) {\n                 if (slot.organizationId && slot.earliestTime) {\n                    const uniqueId = `${slot.organizationId}_${slot.earliestTime}`;\n                    \n                    currentIds.push(uniqueId);\n                    \n                    // ЗАПОМИНАЕМ НАЗВАНИЕ ДЛЯ ЭТОГО ID\n                    // Если вдруг названия нет, подставим ID\n                    idToNameMap[uniqueId] = slot.organizationName || \"Неизвестная клиника\";\n                }\n            }\n            // --- КОНЕЦ ФИЛЬТРА ---\n        });\n    }\n});\n\n// Убираем дубликаты ID\ncurrentIds = [...new Set(currentIds)];\n\n// 3. ИЩЕМ ТОЛЬКО НОВЫЕ (которых не было в таблице)\nconst newIds = currentIds.filter(id => !oldIds.includes(id));\n\n// Собираем названия клиник ТОЛЬКО для новых слотов\nconst newClinicNamesArray = newIds.map(id => idToNameMap[id]);\n// Убираем повторы названий (чтобы не писало \"Клиника 1, Клиника 1, Клиника 1\")\nconst uniqueNewClinicNames = [...new Set(newClinicNamesArray)];\n\n// 4. РЕЗУЛЬТАТ\nreturn {\n  json: {\n    chat_id: sheetData[\"Chat ID\"] || sheetData[\"Chat Id\"], \n    row_number: rowNumber,\n    \n    hasNewSlots: newIds.length > 0,\n    newSlotsCount: newIds.length,\n    updatedIdsString: currentIds.join(\",\"),\n    \n    // 🔥 ВОТ ОНО: Строка с названиями найденных клиник (через запятую)\n    foundClinicNames: uniqueNewClinicNames.join(\", \") \n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "8c732796-705d-4334-a37b-a9b8451e48b7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID_HERE",
+          "mode": "list",
+          "cachedResultName": "Bot Monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        128,
+        0
+      ],
+      "id": "fd7fcf31-e9f5-49e7-9f60-c6a1bd8e1787",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yeAfbIjsGnnoZuoQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID_HERE",
+          "mode": "list",
+          "cachedResultName": "Bot Monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Last IDs": "={{ $json.updatedIdsString }}",
+            "Chat ID": "={{ $json.chat_id }}"
+          },
+          "matchingColumns": [
+            "Chat ID"
+          ],
+          "schema": [
+            {
+              "id": "Chat ID",
+              "displayName": "Chat ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Service ID",
+              "displayName": "Service ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Name",
+              "displayName": "Service Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last IDs",
+              "displayName": "Last IDs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        -16
+      ],
+      "id": "2bfd1f4d-8c1e-4d79-9bb9-a32c9f2103bd",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yeAfbIjsGnnoZuoQ",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fa6e4fe7-0eb1-4a6f-aed7-4eb028966b16",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e69996af8629a6fed31261ed55ce420e9297253536e8c6f5416050c2dfac51a"
+  },
+  "id": "Fn1cxMv8-fxp0U_dDXmPe",
+  "tags": []
+}

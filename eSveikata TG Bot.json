@@ -1,0 +1,669 @@
+{
+  "name": "eSveikata TG Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://ipr.esveikata.lt/api/searches/appointments/times",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "municipalityId",
+              "value": "66"
+            },
+            {
+              "name": "healthcareServiceId",
+              "value": "={{ $json.callback_query.data }}"
+            },
+            {
+              "name": "page",
+              "value": "0"
+            },
+            {
+              "name": "size",
+              "value": "50"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.9,ru;q=0.8"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Referer",
+              "value": "https://ipr.esveikata.lt/"
+            },
+            {
+              "name": "Sec-Fetch-Dest",
+              "value": "empty"
+            },
+            {
+              "name": "Sec-Fetch-Mode",
+              "value": "cors"
+            },
+            {
+              "name": "Sec-Fetch-Site",
+              "value": "same-origin"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "sec-ch-ua",
+              "value": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\""
+            },
+            {
+              "name": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "name": "sec-ch-ua-platform",
+              "value": "\"Windows\""
+            },
+            {
+              "name": "Cookie",
+              "value": "YOUR_ESVEIKATA_COOKIES_HERE"
+            },
+            {
+              "name": "cookie",
+              "value": "YOUR_ESVEIKATA_COOKIES_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -192,
+        -16
+      ],
+      "id": "31357bd5-f125-4895-a92f-7b047d2e0162",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "99910a20-798d-421f-86c4-f4ec7714e11b",
+              "leftValue": "={{ $json.fundType.name }}",
+              "rightValue": "=Ligonių kasos",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        336,
+        -224
+      ],
+      "id": "d5c9ae7f-1de0-4597-ad9b-6374bf815275",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -224
+      ],
+      "id": "eb880469-1438-40ba-987f-fc8c2ea2b571",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "55c32539-9f51-4cd1-acc2-25176a588769"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "09bbf797-60c2-4ccc-bcf2-aeef9226750b",
+                    "leftValue": "={{ $json.callback_query.data }}",
+                    "rightValue": "^\\d+$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9528da7b-7fc3-4e40-b0f5-505177579755",
+                    "leftValue": "={{ $json.callback_query.data }}",
+                    "rightValue": "monitor_",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        -48
+      ],
+      "id": "2429412f-2b04-4dfd-8123-da5c9dde794d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        80
+      ],
+      "id": "eff3789b-639b-447d-8f00-c93db40c5986",
+      "name": "Wait",
+      "webhookId": "9b4eecbf-8812-4cd8-97b4-dac7d000bc4e"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -592,
+        -32
+      ],
+      "id": "f1394d15-0f50-4c8a-a2ef-47192a59ce75",
+      "name": "Send Welcome Msg",
+      "webhookId": "6b4e35b1-84c3-495e-bdea-bd71ecd99bcc",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7cd4d433-f5f4-4180-8712-c5ca75092b88",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16,
+        -96
+      ],
+      "id": "e54b6a46-4211-4999-884c-0f741a4a47b1",
+      "name": "Check if slots exist"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Send Welcome Msg').first().json.callback_query.message.chat.id }}",
+        "text": "=🏥 *Найдено бесплатное место!*\n\n🏥 *Клиника:* {{ $json.organizationName }}\n📅 *Дата:* {{ DateTime.fromMillis($json.earliestTime).setZone('Europe/Vilnius').toFormat('yyyy-MM-dd HH:mm') }}\n🔢 *Свободных слотов:* {{ $json.periodTimesCount }}\n\n[Записаться на ipr.esveikata.lt](https://ipr.esveikata.lt/)",
+        "replyMarkup": "=none",
+        "forceReply": {},
+        "replyKeyboardOptions": {},
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -224
+      ],
+      "id": "4dff5ff1-808a-4055-b917-ddc0a120bc9b",
+      "name": "Notify: Slots Found",
+      "webhookId": "5a4705bc-3569-43d2-8185-ff3131fdd500",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Send Welcome Msg').first().json.callback_query.message.chat.id }}",
+        "text": "\"К сожалению, свободных талонов сейчас нет 😔\"",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        -96
+      ],
+      "id": "2e9c65d0-9506-494d-84b6-88efd34b566e",
+      "name": "Notify: Error / Status",
+      "webhookId": "b9c2fe01-2114-4cee-adc1-dad56b31fa87",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Send Welcome Msg').item.json.message.chat.id }}",
+        "text": "Выберите врача:",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Ortopedija ir traumatologija (Peties chirurgija) II lygis",
+                    "additionalFields": {
+                      "callback_data": "234"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        -192
+      ],
+      "id": "f7f5710d-9954-4d78-a02c-fa63fe4a5bcc",
+      "name": "Inline keyboard",
+      "webhookId": "63cda0f1-9da6-424d-b66a-29475487f5a6",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Send Welcome Msg').first().json.callback_query.message.chat.id }}",
+        "text": "✅ Мониторинг включен! Я буду проверять этого врача каждый час.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        240
+      ],
+      "id": "90be7377-4637-4c3d-8a9e-0ebefacc7de2",
+      "name": "Monitoring is on",
+      "webhookId": "adb86593-6035-412e-8a02-18a836cca51e",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Send Welcome Msg').first().json.callback_query.message.chat.id }}",
+        "text": "Включить уведомления?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "🔔 Авто-мониторинг",
+                    "additionalFields": {
+                      "callback_data": "=monitor_{{ $('Send Welcome Msg').first().json.callback_query.data }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        80
+      ],
+      "id": "822f32ba-d2fb-4cf5-be47-f44eaff20868",
+      "name": "Enable monitoring?",
+      "webhookId": "9d50a71e-6a3b-4263-8216-d0296f361d74",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N6ERbYbKK6CXw7B",
+          "name": "TEST N8N"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": ""YOUR_SPREADSHEET_ID_HERE"",
+          "mode": "list",
+          "cachedResultName": "Bot Monitoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/"YOUR_SPREADSHEET_ID_HERE"/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/"YOUR_SPREADSHEET_ID_HERE"/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Chat ID": "={{ $('Send Welcome Msg').first().json.callback_query.message.chat.id }}",
+            "Service ID": "={{ $json.callback_query.data.replace('monitor_', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Chat ID",
+              "displayName": "Chat ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service ID",
+              "displayName": "Service ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Name",
+              "displayName": "Service Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -192,
+        240
+      ],
+      "id": "e7866455-5f89-4a03-afe9-6124bf848eb5",
+      "name": "Bot monitoring",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "yeAfbIjsGnnoZuoQ",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Check if slots exist",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Notify: Slots Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Inline keyboard",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bot monitoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Enable monitoring?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Welcome Msg": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if slots exist": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify: Error / Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify: Error / Status": {
+      "main": [
+        []
+      ]
+    },
+    "Monitoring is on": {
+      "main": [
+        []
+      ]
+    },
+    "Bot monitoring": {
+      "main": [
+        [
+          {
+            "node": "Monitoring is on",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1035827c-3db6-48cc-8c3b-dfb02c05ad47",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e69996af8629a6fed31261ed55ce420e9297253536e8c6f5416050c2dfac51a"
+  },
+  "id": "-TCcXA_PpVRXfCcH41jit",
+  "tags": []
+}
